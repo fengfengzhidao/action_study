@@ -42,7 +42,7 @@ jobs:
           CGO_ENABLED: 0  # 静态编译
         run: |
           output_name="main-${{ matrix.platform.goos }}-${{ matrix.platform.goarch }}${{ matrix.platform.suffix }}"
-          go build -v -o $output_name .
+          go build -v -ldflags "-X 'main.version=${{ github.ref_name }}' -X 'main.buildTime=$(date -u +"%Y-%m-%dT%H:%M:%SZ")' -X 'main.gitCommit=${{ github.sha }}'"  -o $output_name .
           echo "BINARY_NAME=$output_name" >> $GITHUB_ENV
 
       - name: Upload Artifact
