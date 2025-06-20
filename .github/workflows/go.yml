@@ -7,6 +7,9 @@ on:
 
 env:
   DOCKER_IMAGE_NAME: myapp  # Docker镜像名称
+  SSH_HOST:  ${{ secrets.SSH_HOST }} # 云服务器地址
+  SSH_PORT: 22  # SSH端口
+  DEPLOY_DIR: /opt/myapp  # 云服务器部署目录
 
 jobs:
   build:
@@ -114,3 +117,47 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    needs: docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Docker Image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: artifacts
+
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
+
+      - name: Deploy via Password
+        env:
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}  # 密码存储在GitHub Secrets
+        run: |
+          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no \
+            ubuntu@${{ secrets.SSH_HOST }} \
+            "echo 'Deployment commands here'"
+
+      - name: Deploy to Cloud Server
+        env:
+          SSH_EXTRA_OPTS: -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+        run: |
+          # 1. 上传Docker镜像到服务器
+          scp -P ${{ env.SSH_PORT }} ${{ env.SSH_EXTRA_OPTS }} \
+            artifacts/${{ env.DOCKER_IMAGE_NAME }}.tar.gz \
+            ${{ env.SSH_USER }}@${{ env.SSH_HOST }}:${{ env.DEPLOY_DIR }}
+          
+          # 2. 执行远程部署命令
+          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_EXTRA_OPTS }} \
+            ${{ env.SSH_USER }}@${{ env.SSH_HOST }} \
+            "set -e && \
+            cd ${{ env.DEPLOY_DIR }} && \
+            docker load -i ${{ env.DOCKER_IMAGE_NAME }}.tar.gz \
+            docker stop \$(docker ps -q --filter name=${{ env.DOCKER_IMAGE_NAME }}) || true && \
+            docker rm \$(docker ps -aq --filter name=${{ env.DOCKER_IMAGE_NAME }}) || true && \
+            docker run -d \
+              --name ${{ env.DOCKER_IMAGE_NAME }} \
+              -p 8000:8000 \
+              --restart unless-stopped \
+              ${{ env.DOCKER_IMAGE_NAME }}:${{ github.ref_name }}"
