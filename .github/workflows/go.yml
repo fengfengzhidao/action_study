@@ -3,35 +3,64 @@ name: Go Build and Release
 on:
   push:
     tags:
-      - "v*"  # 只有推送 v 开头的 tag 时才触发整个工作流
+      - "v*"  # 只有推送 v 开头的 tag 时才触发
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # 允许发布 Release
+      contents: write
+    strategy:
+      matrix:
+        platform:
+          - { os: linux, goos: linux, goarch: amd64, suffix: "" }
+          - { os: linux, goos: linux, goarch: arm64, suffix: "-arm64" }
+          - { os: windows, goos: windows, goarch: amd64, suffix: ".exe" }
+          - { os: macos, goos: darwin, goarch: amd64, suffix: "-darwin" }
+          - { os: macos, goos: darwin, goarch: arm64, suffix: "-darwin-arm64" }
     steps:
-      # 检出代码（必须包含 fetch-depth: 0 才能读取 tag）
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 设置 Go 环境
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.24'
 
-      # 编译
       - name: Build
-        run: go build -v -o main ./.
+        env:
+          GOOS: ${{ matrix.platform.goos }}
+          GOARCH: ${{ matrix.platform.goarch }}
+          CGO_ENABLED: 0  # 禁用 CGO 以获得静态链接二进制文件
+        run: |
+          output_name="main-${{ matrix.platform.goos }}-${{ matrix.platform.goarch }}${{ matrix.platform.suffix }}"
+          go build -v -o $output_name .
+          echo "BINARY_NAME=$output_name" >> $GITHUB_ENV
 
-      # 发布到 GitHub Release（自动使用触发的 tag）
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.BINARY_NAME }}
+          path: ${{ env.BINARY_NAME }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: main          # 上传编译好的二进制文件
-          tag_name: ${{ github.ref_name }}  # 使用触发的 tag
+          files: |
+            artifacts/main-*
+          tag_name: ${{ github.ref_name }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
