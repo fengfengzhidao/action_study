@@ -5,10 +5,16 @@ import (
 	"net/http"
 )
 
+func v1(c *gin.Context) {
+	c.JSON(200, gin.H{"code": 0, "version": "v1"})
+}
+func hello(c *gin.Context) {
+	c.String(http.StatusOK, "Hello World")
+}
+
 func main() {
 	router := gin.Default()
-	router.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Hello World")
-	})
+	router.GET("hello", hello)
+	router.GET("v1", v1)
 	router.Run(":8000")
 }

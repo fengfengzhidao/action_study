@@ -59,7 +59,11 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/main-*
+            artifacts/main-linux-amd64
+            artifacts/main-linux-arm64
+            artifacts/main-windows-amd64.exe
+            artifacts/main-darwin-amd64
+            artifacts/main-darwin-arm64
           tag_name: ${{ github.ref_name }}
           generate_release_notes: true
         env:
