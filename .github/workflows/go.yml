@@ -149,8 +149,10 @@ jobs:
             artifacts/${{ env.DOCKER_IMAGE_NAME }}.tar.gz \
             ${{ env.SSH_USER }}@${{ env.SSH_HOST }}:${{ env.DEPLOY_DIR }}
           
+          echo "镜像上传成功"
+          
           # 2. 执行远程部署命令
-          ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_EXTRA_OPTS }} \
+          sshpass -p ${{ secrets.SSH_PASSWORD }}  ssh -p ${{ env.SSH_PORT }} ${{ env.SSH_EXTRA_OPTS }} \
             ${{ env.SSH_USER }}@${{ env.SSH_HOST }} \
             "set -e && \
             cd ${{ env.DEPLOY_DIR }} && \
