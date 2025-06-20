@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 允许推送标签和代码
     steps:
     - uses: actions/checkout@v4
 
