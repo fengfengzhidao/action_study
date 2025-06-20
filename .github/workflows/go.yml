@@ -30,14 +30,16 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git tag v$(date +'%Y%m%d%H%M%S')
-        git push origin --tags
+        TAG="v$(date +'%Y%m%d%H%M%S')"  # 示例：自动生成时间戳标签
+        git tag $TAG
+        git push origin $TAG
     
     - name: Create Release
       if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v1
       with:
         files: main
+        tag_name: ${{ env.TAG }}  # 引用上面创建的标签
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
