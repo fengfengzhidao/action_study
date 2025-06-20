@@ -9,6 +9,7 @@ env:
   DOCKER_IMAGE_NAME: myapp  # Docker镜像名称
   SSH_HOST:  ${{ secrets.SSH_HOST }} # 云服务器地址
   SSH_PORT: 22  # SSH端口
+  SSH_USER: root
   DEPLOY_DIR: /opt/myapp  # 云服务器部署目录
 
 jobs:
@@ -136,7 +137,7 @@ jobs:
           SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}  # 密码存储在GitHub Secrets
         run: |
           sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no \
-            ubuntu@${{ secrets.SSH_HOST }} \
+            ${{ env.SSH_USER }}@${{ secrets.SSH_HOST }} \
             "echo 'Deployment commands here'"
 
       - name: Deploy to Cloud Server
