@@ -31,6 +31,7 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         TAG="v$(date +'%Y%m%d%H%M%S')"  # 示例：自动生成时间戳标签
+        echo "TAG=${TAG}" >> $GITHUB_ENV  # 将变量导出到后续步骤
         git tag $TAG
         git push origin $TAG
     
