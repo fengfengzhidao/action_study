@@ -37,12 +37,15 @@ jobs:
           output_name="main-${{ matrix.platform.goos }}-${{ matrix.platform.goarch }}${{ matrix.platform.suffix }}"
           go build -v -o $output_name .
           echo "BINARY_NAME=$output_name" >> $GITHUB_ENV
+          echo "DOCKER_FILE=$output_name" >> $GITHUB_ENV  # 新增：为Docker构建准备
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.BINARY_NAME }}
-          path: ${{ env.BINARY_NAME }}
+      - name: Prepare Docker Context
+        run: |
+          mkdir -p docker-build
+          cp ${{ env.BINARY_NAME }} docker-build/main  # 统一重命名为main
+          echo "FROM scratch
+          COPY main /app
+          ENTRYPOINT [\"/app\"]" > docker-build/Dockerfile
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -54,12 +57,18 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          platforms: linux/${{ matrix.platform.docker_arch }}  # 关键修复：确保平台格式正确
+          context: docker-build  # 使用专门准备的构建上下文
+          platforms: linux/${{ matrix.platform.docker_arch }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           push: true
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BINARY_NAME }}
+          path: ${{ env.BINARY_NAME }}
 
   release:
     needs: build
