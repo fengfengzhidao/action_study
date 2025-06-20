@@ -54,6 +54,10 @@ jobs:
         uses: actions/download-artifact@v4  # 同步升级到 v4
         with:
           path: artifacts
+          merge-multiple: true  # 关键修复：合并文件
+
+      - name: Verify Files
+        run: ls -R artifacts  # 调试用
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
