@@ -145,7 +145,7 @@ jobs:
           SSH_EXTRA_OPTS: -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
         run: |
           # 1. 上传Docker镜像到服务器
-          scp -P ${{ env.SSH_PORT }} ${{ env.SSH_EXTRA_OPTS }} \
+          sshpass -p ${{ secrets.SSH_PASSWORD }}  scp -P ${{ env.SSH_PORT }} ${{ env.SSH_EXTRA_OPTS }} \
             artifacts/${{ env.DOCKER_IMAGE_NAME }}.tar.gz \
             ${{ env.SSH_USER }}@${{ env.SSH_HOST }}:${{ env.DEPLOY_DIR }}
           
